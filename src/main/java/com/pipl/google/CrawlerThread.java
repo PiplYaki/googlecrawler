@@ -60,7 +60,6 @@ public class CrawlerThread extends Thread {
             }
         }
 
-
         persist.writePhonesToFile(companies,outputName + "/output.csv");
     }
 }
