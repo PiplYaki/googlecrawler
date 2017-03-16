@@ -339,7 +339,10 @@ public class OrgReader {
 //        phones.addAll(getPhonesByFormat(EXT, sb));
         PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
         Iterable<PhoneNumberMatch> numbers = phoneUtil.findNumbers(sb.toString(), "US");
-        numbers.forEach(x -> phones.add(Integer.toString(x.number().getCountryCode()) + Long.toString(x.number().getNationalNumber())));
+        //numbers.forEach(x -> phones.add(Integer.toString(x.number().getCountryCode()) + Long.toString(x.number().getNationalNumber())));
+        for (PhoneNumberMatch number : numbers) {
+            phones.add(Integer.toString(number.number().getCountryCode()) + Long.toString(number.number().getNationalNumber()));
+        }
         return phones;
     }
 
