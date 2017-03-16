@@ -44,7 +44,7 @@ public class Main {
             threadsNumber = Integer.getInteger(args[5]);
         }
 
-        System.out.println("Executing. mod: " + mod + ", input: " + input + "DB: " + dbURL + " with user: " + dbUser);
+        System.out.println("Executing. mod: " + mod + ", input: " + input + " DB: " + dbURL + " with user: " + dbUser);
 
          if (mod.equals("zip")) {
             updateFromZip(threadsNumber, dbUser, dbPassword, dbURL, input);
@@ -62,7 +62,7 @@ public class Main {
 
     static private void updateFromGoogle(String inputFile, String dbUser, String dbPassword, String dbURL) {
 
-        OrgsPersist persist = new OrgsPersist("", "", dbUser, dbPassword, dbURL);
+        OrgsPersist persist = new OrgsPersist("", "", "", dbUser, dbPassword, dbURL);
         OrgReader reader = new OrgReader();
 
         List<String> orgs = persist.loadOrgsFromExcel(inputFile);

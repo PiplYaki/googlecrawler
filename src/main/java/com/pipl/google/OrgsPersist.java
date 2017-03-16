@@ -30,15 +30,20 @@ public class OrgsPersist {
     static final String UPDATE_COMP = "update linkedin_company_v2 set google_url = ?, phones = ? where company = ?";
     static final String PHONE_SQL = "insert into company_phone (phone, fk_company) values (?, ?)";
 
+    static final String LOADED_COMPS_FILE = "loaded_comps.csv";
+
+
     String inputFolder;
     String outputFolder;
+    String loadedCompaniesFile;
     String dbUser;
     String dbPassword;
     String dbURL;
 
-    public OrgsPersist(String inputFolder, String outputFolder, String dbUser, String dbPassword, String dbURL) {
+    public OrgsPersist(String inputFolder, String outputFolder, String loadedCompaniesFile, String dbUser, String dbPassword, String dbURL) {
         this.inputFolder = inputFolder;
         this.outputFolder = outputFolder;
+        this.loadedCompaniesFile = loadedCompaniesFile;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
         this.dbURL = dbURL;
@@ -108,11 +113,63 @@ public class OrgsPersist {
         return filesInZip;
     }
 
+
+
     public Set<String> getLoadedCompanies() {
         Set<String> loaddedCompanies = new TreeSet<String>();
+        BufferedReader br = null;
+        FileReader fr = null;
+        try {
+            br = new BufferedReader(new FileReader(loadedCompaniesFile));
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                loaddedCompanies.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (br != null)
+                    br.close();
+                if (fr != null)
+                    fr.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
 
         return loaddedCompanies;
     }
+
+    synchronized public void addCompany(String company) {
+        BufferedWriter bw = null;
+        FileWriter fw = null;
+
+        try {
+            File file = new File(loadedCompaniesFile);
+            // if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            fw = new FileWriter(file.getAbsoluteFile(), true);
+            bw = new BufferedWriter(fw);
+            bw.write(company + "\n");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (bw != null)
+                    bw.close();
+                if (fw != null)
+                    fw.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
 
     StringBuffer getFileFromZip(ZipFile zipFile, ZipEntry zEntry) {
         StringBuffer sb = new StringBuffer();
