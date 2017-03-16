@@ -41,7 +41,7 @@ public class Main {
 
         int threadsNumber = 8;
         if (args.length > 5) {
-            threadsNumber = Integer.getInteger(args[5]);
+            threadsNumber = Integer.parseInt(args[5]);
         }
 
         System.out.println("Executing. mod: " + mod + ", input: " + input + " DB: " + dbURL + " with user: " + dbUser + " threads number: " + threadsNumber);

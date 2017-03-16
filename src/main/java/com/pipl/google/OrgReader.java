@@ -312,6 +312,12 @@ public class OrgReader {
         Matcher matcher = URLPATTERN.matcher(htmlAsLines.toString());
         if (matcher.find()) {
             String str =  matcher.group(2);
+            try {
+                str = java.net.URLDecoder.decode(str, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+                return null;
+            }
             return str;
         }
         return null;
