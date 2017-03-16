@@ -44,7 +44,7 @@ public class Main {
             threadsNumber = Integer.getInteger(args[5]);
         }
 
-        System.out.println("Executing. mod: " + mod + ", input: " + input + " DB: " + dbURL + " with user: " + dbUser);
+        System.out.println("Executing. mod: " + mod + ", input: " + input + " DB: " + dbURL + " with user: " + dbUser + " threads number: " + threadsNumber);
 
          if (mod.equals("zip")) {
             updateFromZip(threadsNumber, dbUser, dbPassword, dbURL, input);
