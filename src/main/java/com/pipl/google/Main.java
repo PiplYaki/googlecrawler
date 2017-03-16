@@ -98,7 +98,6 @@ public class Main {
 
 //        CrawlerThread ct = new CrawlerThread(1, inputFolder, dbUser, dbPassword, dbURL);
 //        ct.run();
-        threadsNumber = 1;
         List<CrawlerThread> crawlers = new ArrayList<CrawlerThread>();
         for (int i = 1; i <= threadsNumber; i++) {
             CrawlerThread ct = new CrawlerThread(i, inputFolder, dbUser, dbPassword, dbURL);
