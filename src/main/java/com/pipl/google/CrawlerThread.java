@@ -2,11 +2,13 @@ package com.pipl.google;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import static java.lang.System.exit;
+import static java.lang.System.setOut;
 
 /**
  * Created by yakik on 3/2/2017.
@@ -63,6 +65,12 @@ public class CrawlerThread extends Thread {
                 cp.addPhones(phones);
                 loadedCompanies.add(companyName);
                 persist.addCompany(companyName);
+                try {
+                    persist.insertCompanyInfo(null, cp);
+                } catch (SQLException e) {
+                    System.out.println("Fail to insert company " + companyName + " into DB");
+                    e.printStackTrace();
+                }
             }
         }
 

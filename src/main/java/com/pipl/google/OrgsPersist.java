@@ -28,6 +28,7 @@ public class OrgsPersist {
     static final String COMPANY_SQL = "insert into company (name, retrieve_method, url) values (?, ?, ?)";
     static final String UPDATE_URL = "update linkedin_company_v2 set google_url = ? where company = ?";
     static final String UPDATE_COMP = "update linkedin_company_v2 set google_url = ?, phones = ? where company = ?";
+
     static final String PHONE_SQL = "insert into company_phone (phone, fk_company) values (?, ?)";
 
     static final String LOADED_COMPS_FILE = "loaded_comps.csv";
@@ -476,6 +477,38 @@ public class OrgsPersist {
                 shouldCloseConnection = true;
 
             }
+
+            PreparedStatement stmt = localConnection.prepareStatement(UPDATE_URL, Statement.RETURN_GENERATED_KEYS);
+            stmt.setString(1, url);
+            stmt.setString(2, name);
+            stmt.executeUpdate();
+
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        finally {
+
+            if (shouldCloseConnection) {
+                localConnection.close();
+            }
+        }
+        return status;
+    }
+
+    public int insertCompanyUrl(Connection conn, String name, String url, String phones) throws SQLException {
+
+        boolean shouldCloseConnection = false;
+        Connection localConnection = conn;
+        int status = -1;
+        try {
+            if (localConnection == null) {
+                localConnection = DriverManager.getConnection(dbURL, dbUser, dbPassword);
+                shouldCloseConnection = true;
+
+            }
+
             PreparedStatement stmt = localConnection.prepareStatement(UPDATE_URL, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, url);
             stmt.setString(2, name);
@@ -505,8 +538,9 @@ public class OrgsPersist {
                 shouldCloseConnection = true;
 
             }
-            System.out.println("Company: " + cp.getName() + ", URL: " + cp.getUrl() + ", phones: " + cp.getPhonesAsJson());
-            PreparedStatement stmt = localConnection.prepareStatement(UPDATE_COMP, Statement.RETURN_GENERATED_KEYS);
+            System.out.println("Inserting into DB. Company: " + cp.getName() + ", URL: " + cp.getUrl() + ", phones: " + cp.getPhonesAsJson());
+
+            PreparedStatement stmt = conn.prepareStatement(UPDATE_COMP, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, cp.getUrl());
             stmt.setString(2, cp.getPhonesAsJson());
             stmt.setString(3, cp.getName());

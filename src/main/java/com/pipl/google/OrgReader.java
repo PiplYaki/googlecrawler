@@ -307,7 +307,7 @@ public class OrgReader {
 
         try {
             companyName = java.net.URLDecoder.decode(companyName, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             companyName = null;
         }
