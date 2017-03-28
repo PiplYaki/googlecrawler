@@ -545,6 +545,7 @@ public class OrgsPersist {
             stmt.setString(2, cp.getPhonesAsJson());
             stmt.setString(3, cp.getName());
             stmt.executeUpdate();
+            localConnection.commit();
 
         }
         catch (Exception e) {
