@@ -540,7 +540,7 @@ public class OrgsPersist {
             }
             System.out.println("Inserting into DB. Company: " + cp.getName() + ", URL: " + cp.getUrl() + ", phones: " + cp.getPhonesAsJson());
 
-            PreparedStatement stmt = conn.prepareStatement(UPDATE_COMP, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement stmt = localConnection.prepareStatement(UPDATE_COMP, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, cp.getUrl());
             stmt.setString(2, cp.getPhonesAsJson());
             stmt.setString(3, cp.getName());
