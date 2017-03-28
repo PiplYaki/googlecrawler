@@ -26,8 +26,8 @@ public class OrgsPersist {
     static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://storage-proc2.pipl.com/leadhack";
     static final String COMPANY_SQL = "insert into company (name, retrieve_method, url) values (?, ?, ?)";
-    static final String UPDATE_URL = "update linkedin_company_v2 set google_url = ? where company = ?";
-    static final String UPDATE_COMP = "update linkedin_company_v2 set google_url = ?, phones = ? where company = ?";
+    static final String UPDATE_URL = "update linkedin_company_v3 set google_url = ? where company = ?";
+    static final String UPDATE_COMP = "update linkedin_company_v3 set google_url = ?, phones = ? where company = ?";
 
     static final String PHONE_SQL = "insert into company_phone (phone, fk_company) values (?, ?)";
 
