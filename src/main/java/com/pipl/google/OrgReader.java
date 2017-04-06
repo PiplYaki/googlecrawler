@@ -2,6 +2,7 @@ package com.pipl.google;
 
 import com.google.i18n.phonenumbers.PhoneNumberMatch;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -30,6 +31,8 @@ public class OrgReader {
     static final Pattern EXT = Pattern.compile("(.+?(?=\\d{3}-\\d{3}-\\d{4}\\sx|ext\\d{3,5}))(\\d{3}-\\d{3}-\\d{4}\\sx|ext\\d{3,5})(.*)");
 
     static final Pattern URLPATTERN = Pattern.compile("(.+?(?=<h3 class=\"r\"><a href=\")<h3 class=\"r\"><a href=\")(.+?(?=\" onmousedown))(.*)");
+    static final String GOOGLE_PHONE_START = "data-dtype=\"d3ph\"><span dir=\"ltr\">";
+    static final String GOOGLE_PHONE_END = "</span></span></span>";
 
     static final Pattern MIDDLE_PATTERN = Pattern.compile("(.+?(?=<h3 class=\"r\"><a href=\")<h3 class=\"r\"><a href=\")(.+?(?=\" onmousedown))(.*)");
     static final Pattern ORG_NAME_PATTERN = Pattern.compile("(.+?(?=<)<h3 class=\"r\"><a href=\")(.+?(?=\" onmousedown))(.*)");
@@ -37,24 +40,42 @@ public class OrgReader {
     static final public String DICT_FILE_NAME = "C:/tmp/hackathon/dict.txt";
 
     Hashtable<String, String> dict = null;
+    String inputFolder;
+    String outputFolder;
+    String loadedCompaniesFile;
+    String dbUser;
+    String dbPassword;
+    String dbURL;
+
+    OrgsPersist persist = null;
+
+    public OrgReader(OrgsPersist persist) {
+        this.persist = persist;
+    }
 
     public List<CompanyPhones> getOrgsURLS(List<String> orgs) {
         List<CompanyPhones> orgsUrls = new ArrayList<CompanyPhones>();
+        Set<String> loadedCompanies = persist.getLoadedCompanies();
         for (String org : orgs) {
 
+            if (loadedCompanies.contains(org)) {
+                continue;
+            }
             if (dict == null) {
                 loadDict();
             }
             String orgUrl = dict.get(org);
             if (orgUrl == null) {
-                StringBuffer googlePage = searchGoogle(org);
-                if (googlePage == null) {
-                    System.out.println("Failed to find " + org + " headquarters phone in google");
-                    continue;
-                }
-
-                orgUrl = getCompanyUrl(googlePage);
-                addUrlToDict(org, orgUrl);
+//                StringBuffer googlePage = searchGoogle(org);
+//                if (googlePage == null) {
+//                    System.out.println("Failed to find " + org + " headquarters phone in google");
+//                    continue;
+//                }
+//
+//                orgUrl = getCompanyUrl(googlePage);
+//                if (orgUrl != null) {
+//                    addUrlToDict(org, orgUrl);
+//                }
             }
             if (orgUrl == null) {
                 System.out.println("Failed to get " + org + " next hope in google result");
@@ -323,6 +344,25 @@ public class OrgReader {
         }
         return null;
         //String nextHope = null;
+    }
+
+    public String getGooglePhone(StringBuffer htmlAsLines) {
+        String[] parts1 = htmlAsLines.toString().split(GOOGLE_PHONE_START);
+        if (parts1.length < 2) {
+            return null;
+        }
+        String[] parts2 = htmlAsLines.toString().split(GOOGLE_PHONE_START);
+        if (parts2.length < 2) {
+            return null;
+        }
+        String gPhone = parts2[0].trim();
+        PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+        try {
+            Phonenumber.PhoneNumber phone = phoneUtil.parse(gPhone, "US");
+        } catch (Exception e) {
+            return null;
+        }
+        return gPhone;
     }
 
     public String getOrgName(StringBuffer htmlAsLines) {

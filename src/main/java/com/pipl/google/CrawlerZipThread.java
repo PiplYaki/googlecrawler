@@ -13,15 +13,15 @@ import static java.lang.System.setOut;
 /**
  * Created by yakik on 3/2/2017.
  */
-public class CrawlerThread extends Thread {
+public class CrawlerZipThread extends Thread {
 
     static final String LOADED_COMPS_FILE = "loaded_comps.csv";
 
-    OrgReader reader = new OrgReader();
+    OrgReader reader = null;
     OrgsPersist persist = null;
     int threadNumber;
 
-    public CrawlerThread(int threadNumber, String inputFolder, String dbUser, String dbPassword, String dbURL) {
+    public CrawlerZipThread(int threadNumber, String inputFolder, String dbUser, String dbPassword, String dbURL) {
         persist =
                 new OrgsPersist(
                         inputFolder + "/input/" + threadNumber,
@@ -30,6 +30,7 @@ public class CrawlerThread extends Thread {
                         dbUser,
                         dbPassword,
                         dbURL);
+        reader = new OrgReader(persist);
         this.threadNumber = threadNumber;
     }
 
@@ -43,6 +44,7 @@ public class CrawlerThread extends Thread {
             List<StringBuffer> filesInZip = persist.getFilesFromZip(zipFile);
             for (StringBuffer fileContent : filesInZip) {
                 String companyUrl = reader.getCompanyUrl(fileContent);
+                String googlePhone = reader.getCompanyUrl(fileContent);
                 String companyName = reader.getCompanyName(fileContent);
                 if (companyName == null) {
                     System.out.println("Failed to get company name ");
@@ -62,9 +64,10 @@ public class CrawlerThread extends Thread {
                 companies.add(cp);
                 StringBuffer sb = reader.readUrl(companyUrl);
                 Set<String> phones = reader.getPhones(sb);
+                phones.add(googlePhone);
                 cp.addPhones(phones);
-                loadedCompanies.add(companyName);
                 persist.addCompany(companyName);
+                loadedCompanies.add(companyName);
                 try {
                     persist.insertCompanyInfo(null, cp);
                 } catch (SQLException e) {

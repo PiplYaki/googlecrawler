@@ -26,8 +26,8 @@ public class OrgsPersist {
     static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://storage-proc2.pipl.com/leadhack";
     static final String COMPANY_SQL = "insert into company (name, retrieve_method, url) values (?, ?, ?)";
-    static final String UPDATE_URL = "update linkedin_company_v3 set google_url = ? where company = ?";
-    static final String UPDATE_COMP = "update linkedin_company_v3 set google_url = ?, phones = ? where company = ?";
+    static final String UPDATE_URL = "update linkedin_company_v3 set google_url = ? where company_norm = ?";
+    static final String UPDATE_COMP = "update linkedin_company_v3 set google_url = ?, phones = ? where company_norm = ?";
 
     static final String PHONE_SQL = "insert into company_phone (phone, fk_company) values (?, ?)";
 
@@ -196,10 +196,10 @@ public class OrgsPersist {
         return sb;
     }
 
-    public List<String> loadOrgsFromExcel(String fileName) {
+    public List<String> loadOrgsFromExcel(String fileName, String tabName) {
 
 //        final String orgsSheetName = "Search Engine Companies";
-        final String orgsSheetName = "API Companies";
+        final String orgsSheetName = tabName;
 
         List<String> orgs = new ArrayList<String>();
 
@@ -223,11 +223,10 @@ public class OrgsPersist {
             if (cell != null) {
                 String cellVal = cell.toString();
                 cellVal = cellVal.trim();
-                String escapedCell = getEscapedName(cellVal);
-                allOrgs += seperator + "'" + escapedCell + "'";
-                seperator = ",";
+                orgs.add(cellVal);
             }
         }
+        /*
         if (allOrgs.length() > 0) {
 
             Connection conn = null;
@@ -268,7 +267,7 @@ public class OrgsPersist {
 //                    }
 //                }
 //            }
-//        }
+//        }*/
         return orgs;
     }
 
@@ -297,7 +296,7 @@ public class OrgsPersist {
                 conn = pConn;
             }
             Statement stmt = conn.createStatement();
-            String sql = "select lc.Company from linkedin_company_v2 lc, manual_companies mc where mc.company = '" + getEscapedName(orgName) + "' && mc.company_norm = lc.company_norm;";
+            String sql = "select lc.Company from linkedin_company_v3 lc, manual_companies mc where mc.company = '" + getEscapedName(orgName) + "' && mc.company_norm = lc.company_norm;";
             ResultSet rs = stmt.executeQuery(sql);
             if (rs.next()) {
                 return rs.getString("company");
@@ -545,8 +544,6 @@ public class OrgsPersist {
             stmt.setString(2, cp.getPhonesAsJson());
             stmt.setString(3, cp.getName());
             stmt.executeUpdate();
-            localConnection.commit();
-
         }
         catch (Exception e) {
             e.printStackTrace();

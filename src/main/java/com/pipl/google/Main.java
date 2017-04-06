@@ -5,21 +5,12 @@ package com.pipl.google;
  */
 
 
-import com.google.i18n.phonenumbers.PhoneNumberMatch;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
 import java.io.*;
-import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.System.exit;
-import static java.lang.System.setOut;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -50,7 +41,7 @@ public class Main {
             updateFromZip(threadsNumber, dbUser, dbPassword, dbURL, input);
         }
         else if (mod.equals("google")) {
-            updateFromGoogle(input, dbUser, dbPassword, dbURL);
+            updateFromGoogle(threadsNumber, input, dbUser, dbPassword, dbURL);
         }
         else {
             System.out.println("Expected parameters for zip mod: <mod (zip|google)> <DB user> <DB password> <DB URL> <input folder> [threads number]");
@@ -60,26 +51,19 @@ public class Main {
 
     }
 
-    static private void updateFromGoogle(String inputFile, String dbUser, String dbPassword, String dbURL) {
+    static private void updateFromGoogle(int threadsNumber, String inputFile, String dbUser, String dbPassword, String dbURL) {
 
-        OrgsPersist persist = new OrgsPersist("", "", "", dbUser, dbPassword, dbURL);
-        OrgReader reader = new OrgReader();
+        List<CrawlerGoogleThread> crawlers = new ArrayList<CrawlerGoogleThread>();
+        for (int i = 1; i <= threadsNumber; i++) {
+            CrawlerGoogleThread ct = new CrawlerGoogleThread(i, inputFile, dbUser, dbPassword, dbURL);
+            crawlers.add(ct);
+            ct.start();;
+        }
 
-        List<String> orgs = persist.loadOrgsFromExcel(inputFile);
-
-        List<CompanyPhones> orgsUrls = reader.getOrgsURLS(orgs);
-        List<CompanyPhones> companies = new ArrayList<CompanyPhones>();
-
-        for (CompanyPhones cp : orgsUrls) {
+        for (CrawlerGoogleThread ct : crawlers) {
             try {
-                StringBuffer sb = reader.readUrl(cp.getUrl());
-                Set<String> phones = reader.getPhones(sb);
-                cp.addPhones(phones);
-                companies.add(cp);
-                persist.addPhoneToFile("./leadhack_4.csv", cp);
-            }
-            catch (Exception e) {
-                System.out.println("Failed to retrieve company " + cp.getName() + ". moving to next company");
+                ct.join();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -96,16 +80,16 @@ public class Main {
             exit(-1);
         }
 
-//        CrawlerThread ct = new CrawlerThread(1, inputFolder, dbUser, dbPassword, dbURL);
+//        CrawlerZipThread ct = new CrawlerZipThread(1, inputFolder, dbUser, dbPassword, dbURL);
 //        ct.run();
-        List<CrawlerThread> crawlers = new ArrayList<CrawlerThread>();
+        List<CrawlerZipThread> crawlers = new ArrayList<CrawlerZipThread>();
         for (int i = 1; i <= threadsNumber; i++) {
-            CrawlerThread ct = new CrawlerThread(i, inputFolder, dbUser, dbPassword, dbURL);
+            CrawlerZipThread ct = new CrawlerZipThread(i, inputFolder, dbUser, dbPassword, dbURL);
             crawlers.add(ct);
             ct.start();;
         }
 
-        for (CrawlerThread ct : crawlers) {
+        for (CrawlerZipThread ct : crawlers) {
             try {
                 ct.join();
             } catch (InterruptedException e) {
