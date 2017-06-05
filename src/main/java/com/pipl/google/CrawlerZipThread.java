@@ -24,7 +24,7 @@ public class CrawlerZipThread extends Thread {
     public CrawlerZipThread(int threadNumber, String inputFolder, String dbUser, String dbPassword, String dbURL) {
         persist =
                 new OrgsPersist(
-                        inputFolder + "/input/" + threadNumber,
+                        inputFolder,
                         inputFolder + "/output/" + threadNumber,
                         inputFolder + "/" + LOADED_COMPS_FILE,
                         dbUser,
