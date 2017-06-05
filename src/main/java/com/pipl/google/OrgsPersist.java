@@ -1,5 +1,8 @@
 package com.pipl.google;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.opencsv.CSVReader;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -26,12 +29,15 @@ public class OrgsPersist {
     static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
     static final String DB_URL = "jdbc:mysql://storage-proc2.pipl.com/leadhack";
     static final String COMPANY_SQL = "insert into company (name, retrieve_method, url) values (?, ?, ?)";
-    static final String UPDATE_URL = "update linkedin_company_v3 set google_url = ? where company_norm = ?";
-    static final String UPDATE_COMP = "update linkedin_company_v3 set google_url = ?, phones = ? where company_norm = ?";
+    static final String UPDATE_URL = "update linkedin_company_v4 set google_url = ? where company_norm = ?";
+    static final String UPDATE_COMP = "update linkedin_company_v4 set google_by_address_url = ?, phones_by_address_serach = ?, google_plus_phone = ? where company_norm = ?";
 
     static final String PHONE_SQL = "insert into company_phone (phone, fk_company) values (?, ?)";
 
     static final String LOADED_COMPS_FILE = "loaded_comps.csv";
+    public static final int COMPANY_NAME = 0;
+    public static final int COMPANY_DOMAIN = 2;
+    public static final int COMPANY_ADDRESS = 1;
 
 
     String inputFolder;
@@ -121,6 +127,12 @@ public class OrgsPersist {
         BufferedReader br = null;
         FileReader fr = null;
         try {
+            File file = new File(loadedCompaniesFile);
+            // if file doesnt exists, then create it
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
             br = new BufferedReader(new FileReader(loadedCompaniesFile));
 
             String line;
@@ -196,36 +208,82 @@ public class OrgsPersist {
         return sb;
     }
 
-    public List<String> loadOrgsFromExcel(String fileName, String tabName) {
+    public List<Company> loadOrgsFromExcel(String fileName, String tabName) {
 
 //        final String orgsSheetName = "Search Engine Companies";
         final String orgsSheetName = tabName;
 
-        List<String> orgs = new ArrayList<String>();
+        List<Company> orgs = new ArrayList<Company>();
 
-        Workbook wb = openExcel(fileName);
-        if (wb == null) {
-            System.out.println("Fail to open excel " + fileName);
-            return orgs;
+        CSVReader reader = null;
+        try {
+            reader = new CSVReader(new FileReader(fileName));
+            String[] line;
+            reader.readNext();//header
+            while ((line = reader.readNext()) != null) {
+                orgs.add(new Company(line[COMPANY_NAME],line[COMPANY_DOMAIN],line[COMPANY_ADDRESS]));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        Sheet sheet = wb.getSheet(orgsSheetName);
-        int rows = sheet.getPhysicalNumberOfRows();
 
-        String seperator = "";
-        String allOrgs = "";
-        for (int r = 1; r < rows; r++) {
-            Row row = sheet.getRow(r);
-            if (row == null) {
-                continue;
-            }
-            Cell cell = row.getCell(0);
-            if (cell != null) {
-                String cellVal = cell.toString();
-                cellVal = cellVal.trim();
-                orgs.add(cellVal);
-            }
-        }
+
+
+//        BufferedReader br = null;
+//        String line = "";
+//        String cvsSplitBy = ",";
+//        try {
+//
+//            br = new BufferedReader(new FileReader(fileName));
+//            br.readLine();//header
+//            while ((line = br.readLine()) != null) {
+//
+//                // use comma as separator
+//                String[] country = line.split("\\s*,\\s*");
+//
+//                orgs.add(new Company(country[COMPANY_NAME],country[COMPANY_DOMAIN],country[COMPANY_ADDRESS]));
+//
+//            }
+//
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//            if (br != null) {
+//                try {
+//                    br.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+
+
+//        Workbook wb = openExcel(fileName);
+//        if (wb == null) {
+//            System.out.println("Fail to open excel " + fileName);
+//            return orgs;
+//        }
+//
+//        Sheet sheet = wb.getSheet(orgsSheetName);
+//        int rows = sheet.getPhysicalNumberOfRows();
+//
+//        String seperator = "";
+//        String allOrgs = "";
+//        for (int r = 1; r < rows; r++) {
+//            Row row = sheet.getRow(r);
+//            if (row == null) {
+//                continue;
+//            }
+//            Cell cell = row.getCell(0);
+//            if (cell != null) {
+//                String cellVal = cell.toString();
+//                cellVal = cellVal.trim();
+//                orgs.add(cellVal);
+//            }
+//        }
         /*
         if (allOrgs.length() > 0) {
 
@@ -381,7 +439,8 @@ public class OrgsPersist {
         return null;
     }
 
-    public void addPhoneToFile(String fileName, CompanyPhones cp) {
+
+    public void writeRowToFile(String fileName, String row){
         BufferedWriter bw = null;
         FileWriter fw = null;
 
@@ -393,7 +452,7 @@ public class OrgsPersist {
             }
             fw = new FileWriter(file.getAbsoluteFile(), true);
             bw = new BufferedWriter(fw);
-            bw.write(cp.getName() + "," + cp.getUrl() + "," + cp.getPhonesAsJson());
+            bw.write(row);
             bw.newLine();
 
         } catch (IOException e) {
@@ -410,6 +469,31 @@ public class OrgsPersist {
         }
     }
 
+
+    public void addGooglePlusCompanyToFile(String fileName, GooglePlusCompany googleplus) {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonInString = "";
+        try {
+            jsonInString = mapper.writeValueAsString(googleplus);
+        } catch (JsonProcessingException e) {
+            jsonInString = "";
+        }
+
+        writeRowToFile(fileName,googleplus.getName() + "\t" + jsonInString);
+    }
+
+    public void addPhoneToFile(String fileName, CompanyPhones cp) {
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonInString = "";
+        try {
+            jsonInString = mapper.writeValueAsString(cp.getAsCompany());
+        } catch (JsonProcessingException e) {
+            jsonInString = ""+cp.getName() + "," + cp.getDomain() + "," + cp.getPhonesAsJson();
+        }
+
+        writeRowToFile(fileName,cp.getName() + "\t" + jsonInString);
+    }
+
     public void writePhonesToFile(List<CompanyPhones> cps) {
         writePhonesToFile(cps, "./leadhack_3.csv");
     }
@@ -424,7 +508,7 @@ public class OrgsPersist {
 
             bw = new BufferedWriter(new OutputStreamWriter(fos));
             for (CompanyPhones cp : cps) {
-                bw.write(cp.getName() + "," + cp.getUrl() + "," + cp.getPhonesAsJson());
+                bw.write(cp.getName() + "," + cp.getDomain() + "," + cp.getPhonesAsJson());
                 bw.newLine();
             }
 
@@ -537,12 +621,13 @@ public class OrgsPersist {
                 shouldCloseConnection = true;
 
             }
-            System.out.println("Inserting into DB. Company: " + cp.getName() + ", URL: " + cp.getUrl() + ", phones: " + cp.getPhonesAsJson());
+            System.out.println("Inserting into DB. Company: " + cp.getName() + ", URL: " + cp.getDomain() + ", phones: " + cp.getPhonesAsJson());
 
             PreparedStatement stmt = localConnection.prepareStatement(UPDATE_COMP, Statement.RETURN_GENERATED_KEYS);
-            stmt.setString(1, cp.getUrl());
-            stmt.setString(2, cp.getPhonesAsJson());
-            stmt.setString(3, cp.getName());
+            stmt.setString(1, cp.getDomain());
+            stmt.setString(2, cp.getPhone().toString());
+            stmt.setString(3, cp.getGooglePlusPhone().toString());
+            stmt.setString(4, cp.getName());
             stmt.executeUpdate();
         }
         catch (Exception e) {
@@ -568,6 +653,8 @@ public class OrgsPersist {
     }
 
 
+
+
 //    public String escapeOrgName(String orgName) {
 //        String localOrgName = orgName;
 //        String newCompName = "";
@@ -587,4 +674,3 @@ public class OrgsPersist {
 
 
 }
-

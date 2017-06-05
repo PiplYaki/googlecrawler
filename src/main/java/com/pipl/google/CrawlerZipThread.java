@@ -43,9 +43,9 @@ public class CrawlerZipThread extends Thread {
         for (File zipFile : zipFiles) {
             List<StringBuffer> filesInZip = persist.getFilesFromZip(zipFile);
             for (StringBuffer fileContent : filesInZip) {
-                String companyUrl = reader.getCompanyUrl(fileContent);
-                String googlePhone = reader.getCompanyUrl(fileContent);
-                String companyName = reader.getCompanyName(fileContent);
+                GooglePlusCompany googleplus = new GooglePlusCompany(fileContent);
+                String companyUrl =  reader.getCompanyUrl(fileContent);
+                String companyName = googleplus.name!=null ? googleplus.name : reader.getCompanyNameByAddress(fileContent);
                 if (companyName == null) {
                     System.out.println("Failed to get company name ");
                     continue;
@@ -54,18 +54,22 @@ public class CrawlerZipThread extends Thread {
                     continue;
                 }
 
+
+                if (!googleplus.phones.isEmpty())
+                    System.out.println("yay");
+
                 if (companyUrl == null) {
                     System.out.println("Failed to get company URL for company " + companyName);
                     continue;
                 }
                 CompanyPhones cp = new CompanyPhones();
                 cp.setName(companyName);
-                cp.setUrl(companyUrl);
-                companies.add(cp);
+                cp.setDomain(googleplus.domain!=null ? googleplus.domain : companyUrl);
                 StringBuffer sb = reader.readUrl(companyUrl);
                 Set<String> phones = reader.getPhones(sb);
-                phones.add(googlePhone);
+                cp.addGooglePlusPhones(googleplus.phones);
                 cp.addPhones(phones);
+                companies.add(cp);
                 persist.addCompany(companyName);
                 loadedCompanies.add(companyName);
                 try {

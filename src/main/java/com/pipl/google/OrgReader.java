@@ -34,10 +34,13 @@ public class OrgReader {
     static final String GOOGLE_PHONE_START = "data-dtype=\"d3ph\"><span dir=\"ltr\">";
     static final String GOOGLE_PHONE_END = "</span></span></span>";
 
+
+
     static final Pattern MIDDLE_PATTERN = Pattern.compile("(.+?(?=<h3 class=\"r\"><a href=\")<h3 class=\"r\"><a href=\")(.+?(?=\" onmousedown))(.*)");
     static final Pattern ORG_NAME_PATTERN = Pattern.compile("(.+?(?=<)<h3 class=\"r\"><a href=\")(.+?(?=\" onmousedown))(.*)");
 
-    static final public String DICT_FILE_NAME = "C:/tmp/hackathon/dict.txt";
+    static final public String DICT_FILE_NAME = "./dict.txt";
+    public static final String DICT_SPLIT_PATTERN = "###@@@###@@@###";
 
     Hashtable<String, String> dict = null;
     String inputFolder;
@@ -53,37 +56,44 @@ public class OrgReader {
         this.persist = persist;
     }
 
-    public List<CompanyPhones> getOrgsURLS(List<String> orgs) {
+    public List<CompanyPhones> getOrgsURLS(List<Company> orgs) {
         List<CompanyPhones> orgsUrls = new ArrayList<CompanyPhones>();
         Set<String> loadedCompanies = persist.getLoadedCompanies();
-        for (String org : orgs) {
-
+        int i=0;
+        for (Company company : orgs) {
+            i++;
+            if (i==2) break;
+            String org = company.name;
             if (loadedCompanies.contains(org)) {
                 continue;
             }
             if (dict == null) {
                 loadDict();
             }
-            String orgUrl = dict.get(org);
-            if (orgUrl == null) {
-//                StringBuffer googlePage = searchGoogle(org);
-//                if (googlePage == null) {
-//                    System.out.println("Failed to find " + org + " headquarters phone in google");
-//                    continue;
-//                }
-//
-//                orgUrl = getCompanyUrl(googlePage);
-//                if (orgUrl != null) {
-//                    addUrlToDict(org, orgUrl);
-//                }
+            StringBuffer googlePage=null;
+            String googlePageResult = dict.get(org);
+            if (googlePageResult == null) {
+//            if (true) {
+                googlePage = searchGoogle(company);
+                if (googlePage == null) {
+                    System.out.println("Failed to find " + org + " headquarters phone in google");
+                    continue;
+                }else{
+                    addUrlToDict(org, googlePage.toString());
+                }
+            }else{
+                googlePage = new StringBuffer(googlePageResult);
             }
+
+            String orgUrl = getCompanyUrl(googlePage);
             if (orgUrl == null) {
                 System.out.println("Failed to get " + org + " next hope in google result");
                 continue;
             }
             CompanyPhones cp = new CompanyPhones();
             cp.setName(org);
-            cp.setUrl(orgUrl);
+            cp.setDomain(orgUrl);
+            cp.setGooglePage(googlePage);
             OrgsPersist op = null;//new OrgsPersist();
             try {
                 orgsUrls.add(cp);
@@ -111,10 +121,10 @@ public class OrgReader {
             }
             CompanyPhones cp = new CompanyPhones();
             cp.setName(org);
-            cp.setUrl(orgUrl);
+            cp.setDomain(orgUrl);
             OrgsPersist op = null;//new OrgsPersist();
             try {
-                int dbId = op.insertCompanyUrl(null, cp.getName(), cp.getUrl());
+                int dbId = op.insertCompanyUrl(null, cp.getName(), cp.getDomain());
                 orgsUrls.add(cp);
             }
             catch (Exception e) {
@@ -129,9 +139,9 @@ public class OrgReader {
 //
 //    }
 
-    private StringBuffer searchGoogle(String query) {
+    private StringBuffer searchGoogle(Company company) {
         String googleSearchString = "http://www.google.com/search?q=";
-        String fullQuery = setPlusSign(query) + "+" + "headquarters+phone+number";
+        String fullQuery = setPlusSign(company.address) + "+" + setPlusSign(company.name);
         String charset = "UTF-8";
         try {
             System.out.println("Searching for " + fullQuery);
@@ -152,7 +162,7 @@ public class OrgReader {
 
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split("###");
+                String[] parts = line.split(DICT_SPLIT_PATTERN);
                 dict.put(parts[0], parts[1]);
             }
         } catch (IOException e) {
@@ -190,7 +200,7 @@ public class OrgReader {
             }
             fw = new FileWriter(file.getAbsoluteFile(), true);
             bw = new BufferedWriter(fw);
-            bw.write(org + "###" + url + "\n");
+            bw.write(org + DICT_SPLIT_PATTERN + url + "\n");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -217,6 +227,7 @@ public class OrgReader {
         System.out.println("Reading URL: " + loadUrl);
 
         int timeout = 10;
+        try {
         RequestConfig config = RequestConfig.custom()
                 .setConnectTimeout(timeout * 1000)
                 .setConnectionRequestTimeout(timeout * 1000)
@@ -226,7 +237,7 @@ public class OrgReader {
         HttpGet request = new HttpGet(loadUrl);
         // add request header
         request.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
-        try {
+
             HttpResponse response = client.execute(request);
             BufferedReader rd = new BufferedReader(
                     new InputStreamReader(response.getEntity().getContent()));
@@ -252,8 +263,6 @@ public class OrgReader {
             HttpURLConnection.setFollowRedirects(true);
             conn.setRequestProperty("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36");
             int responseCode = conn.getResponseCode();
-            // Request not successfu
-
             long res = conn.getResponseCode();
             System.out.println("Respons e is: " + res);
             if (res != HttpURLConnection.HTTP_OK && res != HttpURLConnection.HTTP_MOVED_TEMP
@@ -302,6 +311,46 @@ public class OrgReader {
         return updatedQuery;
     }
 
+    public String getCompanyNameByAddress(StringBuffer file) {
+        if (file == null)
+            return null;
+
+        String searchStr = "search?q=";
+
+        int urlLocation = file.toString().indexOf(searchStr);
+        if (urlLocation == -1) {
+            return null;
+        }
+        urlLocation += searchStr.length();
+
+        int phoneLocation = file.toString().indexOf("+phone");
+        if (phoneLocation == -1) {
+            return null;
+        }
+
+        if (phoneLocation < urlLocation) {
+            return null;
+        }
+
+        String searchLine = file.toString().substring(urlLocation, phoneLocation);
+
+        try {
+            searchLine = java.net.URLDecoder.decode(searchLine, "UTF-8");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        String[] url_splited = searchLine.split(",");
+        String companyName = url_splited[url_splited.length-1];
+//        try {
+//            companyName = java.net.URLDecoder.decode(companyName, "UTF-8");
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            companyName = null;
+//        }
+        return companyName;
+    }
+
     public String getCompanyName(StringBuffer file) {
         if (file == null) {
             return null;
@@ -346,24 +395,7 @@ public class OrgReader {
         //String nextHope = null;
     }
 
-    public String getGooglePhone(StringBuffer htmlAsLines) {
-        String[] parts1 = htmlAsLines.toString().split(GOOGLE_PHONE_START);
-        if (parts1.length < 2) {
-            return null;
-        }
-        String[] parts2 = htmlAsLines.toString().split(GOOGLE_PHONE_START);
-        if (parts2.length < 2) {
-            return null;
-        }
-        String gPhone = parts2[0].trim();
-        PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
-        try {
-            Phonenumber.PhoneNumber phone = phoneUtil.parse(gPhone, "US");
-        } catch (Exception e) {
-            return null;
-        }
-        return gPhone;
-    }
+
 
     public String getOrgName(StringBuffer htmlAsLines) {
 
@@ -378,7 +410,7 @@ public class OrgReader {
 
 
 
-    public Set<String> getPhones(StringBuffer sb) {
+    public static Set<String> getPhones(StringBuffer sb) {
         Set<String> phones = new TreeSet<String>();
 //        phones.addAll(getPhonesByFormat(DIGITS10, sb));
 //        phones.addAll(getPhonesByFormat(SEPERATED, sb));
@@ -410,5 +442,27 @@ public class OrgReader {
         }
         return phones;
     }
+
+
+
+    public  String getGooglePhone(StringBuffer htmlAsLines) {
+        String[] parts1 = htmlAsLines.toString().split(GOOGLE_PHONE_START);
+        if (parts1.length < 2) {
+            return null;
+        }
+        String[] parts2 = parts1[1].toString().split(GOOGLE_PHONE_END);
+        if (parts2.length < 2) {
+            return null;
+        }
+        String gPhone = parts2[0].trim();
+        PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+        try {
+            Phonenumber.PhoneNumber phone = phoneUtil.parse(gPhone, "US");
+        } catch (Exception e) {
+            return null;
+        }
+        return gPhone;
+    }
+
 
 }

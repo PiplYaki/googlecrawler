@@ -13,8 +13,10 @@ import java.util.regex.Pattern;
 import static java.lang.System.exit;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
 
+    public static final int NUMBER_OF_THREADS = 1;
+
+    public static void main(String[] args) {
         if (args.length < 4) {
             System.out.println("Expected parameters: <mod (zip|google)> <input> <DB user> <DB password> [DB URL] [threads number]");
             exit(-1);
@@ -30,14 +32,14 @@ public class Main {
             dbURL = args[4];
         }
 
-        int threadsNumber = 8;
+        int threadsNumber = NUMBER_OF_THREADS;
         if (args.length > 5) {
             threadsNumber = Integer.parseInt(args[5]);
         }
 
         System.out.println("Executing. mod: " + mod + ", input: " + input + " DB: " + dbURL + " with user: " + dbUser + " threads number: " + threadsNumber);
 
-         if (mod.equals("zip")) {
+        if (mod.equals("zip")) {
             updateFromZip(threadsNumber, dbUser, dbPassword, dbURL, input);
         }
         else if (mod.equals("google")) {
@@ -47,9 +49,8 @@ public class Main {
             System.out.println("Expected parameters for zip mod: <mod (zip|google)> <DB user> <DB password> <DB URL> <input folder> [threads number]");
             exit(-1);
         }
-
-
     }
+
 
     static private void updateFromGoogle(int threadsNumber, String inputFile, String dbUser, String dbPassword, String dbURL) {
 

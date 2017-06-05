@@ -362,6 +362,7 @@ class MainTest extends groovy.util.GroovyTestCase {
             }
         }
         System.out.println("comps: " + comps);
+        assertTrue(True)
     }
     private Workbook openExcel(String fileName) {
         FileInputStream fis = null;

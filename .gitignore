@@ -21,3 +21,4 @@ target/scala-2.12/classes/
 target/scala-2.12/resource_managed/
 target/scala-2.12/src_managed/
 target/scala-2.12/test-classes/
+ziped_files/
